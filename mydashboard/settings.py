@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'dashboard',
+    "dashboard.apps.DashboardConfig",
 ]
 
 # ======================
