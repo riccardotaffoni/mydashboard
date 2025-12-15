@@ -8,3 +8,5 @@ python manage.py migrate
 
 # Raccogli i file statici
 python manage.py collectstatic --noinput
+
+#python manage.py runserver
