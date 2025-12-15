@@ -1,7 +1,8 @@
 import os
 from django.contrib.auth import get_user_model
+from django.db import connection
 
-def create_superuser():
+def create_superuser(sender, **kwargs):
     User = get_user_model()
 
     username = os.environ.get("DJANGO_SUPERUSER_USERNAME")
@@ -9,6 +10,10 @@ def create_superuser():
     password = os.environ.get("DJANGO_SUPERUSER_PASSWORD")
 
     if not username or not password:
+        return
+
+    # sicurezza extra: verifica che la tabella esista
+    if "auth_user" not in connection.introspection.table_names():
         return
 
     if not User.objects.filter(username=username).exists():
