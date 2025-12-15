@@ -24,4 +24,4 @@ def dashboard_view(request):
             fig.update_layout(margin=dict(l=20, r=20, t=30, b=20))
             figures.append(pio.to_html(fig, full_html=False, include_plotlyjs='cdn'))
 
-    return render(request, r"C:\Users\User\OneDrive - Veos\Desktop\repos_azure\MTRIAGAS\scripts\live_dashboard\mydashboard\dashboard\templates\dashboard.html", {"figures": figures})
+    return render(request, "dashboard/templates/dashboard.html", {"figures": figures})
