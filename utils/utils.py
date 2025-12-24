@@ -5,6 +5,7 @@ import streamlit as st
 def read_from_ftp(
     filename,
     path="opt/veostrading/veos_ita_automation/",
+    return_mtime=True
 ):
     # SSH connection details
     hostname = st.secrets["FTP_HOST"]
@@ -26,17 +27,26 @@ def read_from_ftp(
     sftp = ssh.open_sftp()
 
     try:
-        file_bytes = BytesIO()
-        with sftp.open(remote_filepath, 'rb') as remote_file:
-            file_bytes.write(remote_file.read())
+        # 🔹 mtime remoto
+        stat = sftp.stat(remote_filepath)
+        remote_mtime = stat.st_mtime
 
-        file_bytes.seek(0)
-        df = pd.read_feather(file_bytes)
+        # 🔹 lettura file
+        buffer = BytesIO()
+        with sftp.open(remote_filepath, 'rb') as f:
+            buffer.write(f.read())
+        buffer.seek(0)
 
-        print(f"📥 File {filename} letto con successo")
+        df = pd.read_feather(buffer)
+
+        print(f"📥 File {filename} letto correttamente")
 
     finally:
         sftp.close()
         ssh.close()
 
-    return df
+    if return_mtime:
+        return df, remote_mtime
+    else:
+        return df
+

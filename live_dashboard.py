@@ -19,18 +19,18 @@ last_attempt = datetime.now().strftime('%H:%M:%S')
 
 # --- CARICAMENTO DATI ---
 @st.cache_data(show_spinner=False)
-def load_data(path, mtime):
+def load_data():
     try:
         time.sleep(0.1)
-        df = read_from_ftp(filename=FILE_NAME, path=FILE_PATH)
+        df,current_mtime = read_from_ftp(filename=FILE_NAME, path=FILE_PATH, return_mtime=True)
         df['delivery_start'] = pd.to_datetime(df['delivery_start'])
-        return df.sort_values('delivery_start')
+        return df.sort_values('delivery_start'), current_mtime
     except Exception as e:
         st.error(f"Errore: {e}")
-        return pd.DataFrame()
+        return pd.DataFrame(), None
 
-current_mtime = os.path.getmtime(FILE_PATH) if os.path.exists(FILE_PATH) else 0
-df = load_data(FILE_PATH, current_mtime)
+#current_mtime = os.path.getmtime(FILE_PATH) if os.path.exists(FILE_PATH) else 0
+df, current_mtime = load_data()
 # --- SIDEBAR: CONTROLLI ANALISTA ---
 st.sidebar.header("📊 Componenti Potenza")
 sw_sbil = st.sidebar.checkbox("Mostra QTY SBIL", value=True)
