@@ -147,7 +147,9 @@ else:
                 annotations.append(dict(xref='paper', x=0.01, y=(low+high)/2, text=regime.upper(), showarrow=False, font=dict(size=10)))
 
     # 5. Linea Tempo Corrente
-    now = datetime.now()
+    now = datetime.now(
+        ZoneInfo("Europe/Rome")
+    )
     shapes.append(dict(type='line', xref='x', yref='paper', x0=now, x1=now, y0=0, y1=1, line=dict(color='red', width=2, dash='dash')))
 
     # Layout Finale
