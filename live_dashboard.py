@@ -6,6 +6,7 @@ import os
 import time
 from datetime import datetime, timedelta
 from streamlit_autorefresh import st_autorefresh
+from zoneinfo import ZoneInfo
 
 from utils.utils import read_from_ftp
 # --- CONFIGURAZIONE ---
@@ -71,7 +72,10 @@ style = "font-size: 0.85rem; color: gray;"
 col_t1, col_t2 = st.columns(2)
 
 with col_t1:
-    mtime_dt = datetime.fromtimestamp(current_mtime).strftime('%H:%M:%S %d/%m')
+    mtime_dt = datetime.fromtimestamp(
+        current_mtime,
+        ZoneInfo("Europe/Rome")   # ← parte da stringa
+    ).strftime('%H:%M:%S %d/%m')
     st.markdown(f"<p style='{style}'>📂 <b>Ultima modifica dati:</b> {mtime_dt}</p>", 
                 unsafe_allow_html=True)
 
