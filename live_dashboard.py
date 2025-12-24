@@ -14,10 +14,11 @@ st.set_page_config(page_title="MTRIAGAS Advanced Analysis", layout="wide")
 FILE_PATH = "opt/veostrading/veostrading_repos/MTRIAGAS/data/"
 FILE_NAME= "data_graph.ftr"
 
-# --- AUTO-REFRESH (10 secondi) ---
-st_autorefresh(interval=10 * 1000, key="data_watcher")
-last_attempt = datetime.now().strftime('%H:%M:%S')
-
+# --- AUTO-REFRESH (60 secondi) ---
+st_autorefresh(interval=60 * 1000, key="data_watcher")
+last_attempt = datetime.now(
+    ZoneInfo("Europe/Rome")
+).strftime('%H:%M:%S %d/%m/%Y')
 # --- CARICAMENTO DATI ---
 @st.cache_data(show_spinner=False)
 def load_data():
