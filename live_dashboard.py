@@ -1,19 +1,17 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
 import plotly.graph_objects as go
-import os
 import time
 from datetime import datetime, timedelta
 from streamlit_autorefresh import st_autorefresh
 from zoneinfo import ZoneInfo
 
-from utils.utils import read_from_ftp
+from utils.utils import read_from_ftp,get_remote_mtime
 # --- CONFIGURAZIONE ---
 st.set_page_config(page_title="MTRIAGAS Advanced Analysis", layout="wide")
 FILE_PATH = "opt/veostrading/veostrading_repos/MTRIAGAS/data/"
 FILE_NAME= "data_graph.ftr"
-
+print("again")
 # --- AUTO-REFRESH (60 secondi) ---
 st_autorefresh(interval=60 * 1000, key="data_watcher")
 last_attempt = datetime.now(
@@ -21,7 +19,7 @@ last_attempt = datetime.now(
 ).strftime('%H:%M:%S %d/%m/%Y')
 # --- CARICAMENTO DATI ---
 @st.cache_data(show_spinner=False)
-def load_data():
+def load_data(mtime):
     try:
         time.sleep(0.1)
         df,current_mtime = read_from_ftp(filename=FILE_NAME, path=FILE_PATH, return_mtime=True)
@@ -31,9 +29,10 @@ def load_data():
         st.error(f"Errore: {e}")
         return pd.DataFrame(), None
 
-#current_mtime = os.path.getmtime(FILE_PATH) if os.path.exists(FILE_PATH) else 0
-df, current_mtime = load_data()
+mtime = get_remote_mtime(filename=FILE_NAME, path=FILE_PATH)
+df, current_mtime = load_data(mtime)
 # --- SIDEBAR: CONTROLLI ANALISTA ---
+print(df.head())
 st.sidebar.header("📊 Componenti Potenza")
 sw_sbil = st.sidebar.checkbox("Mostra QTY SBIL", value=True)
 sw_levl = st.sidebar.checkbox("Mostra QTY LEVL", value=True)
@@ -50,6 +49,7 @@ if st.sidebar.button("🔄 Reset Filtri"):
     st.session_state.end_val = df['delivery_start'].max() + timedelta(hours=24)
 
 # --- GESTIONE DATE ---
+print(df.head())
 if not df.empty:
     if 'start_val' not in st.session_state:
         st.session_state.start_val = df['delivery_start'].max() - timedelta(hours=24)
@@ -59,11 +59,13 @@ if not df.empty:
     start_dt = st.sidebar.datetime_input("Inizio", value=st.session_state.start_val)
     end_dt = st.sidebar.datetime_input("Fine", value=st.session_state.end_val)
     st.session_state.start_val, st.session_state.end_val = start_dt, end_dt
-
+    print(start_dt)
+    print(end_dt)
     df_plot = df[(df['delivery_start'] >= pd.to_datetime(start_dt)) & 
                  (df['delivery_start'] <= pd.to_datetime(end_dt))].copy()
 else:
     df_plot = pd.DataFrame()
+print(df_plot.head())
 
 # --- HEADER ---
 st.title("🚀 Dashboard MTRIAGAS")
@@ -151,7 +153,7 @@ else:
         ZoneInfo("Europe/Rome")
     )
     shapes.append(dict(type='line', xref='x', yref='paper', x0=now, x1=now, y0=0, y1=1, line=dict(color='red', width=2, dash='dash')))
-
+    print(shapes)
     # Layout Finale
     fig.update_layout(
             template=template,
@@ -170,8 +172,8 @@ else:
             )
         )
     
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
 
     # --- TABELLA ---
     with st.expander("🔍 Tabella Dati"):
-        st.dataframe(df_plot, use_container_width=True)
+        st.dataframe(df_plot, width='stretch')

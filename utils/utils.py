@@ -50,3 +50,31 @@ def read_from_ftp(
     else:
         return df
 
+def get_remote_mtime(
+    filename,
+    path,
+):
+    hostname = st.secrets["FTP_HOST"]
+    port = 4022
+    username = st.secrets["username"]
+    password = st.secrets["password"]  # lascia vuoto se usi solo la chiave
+
+    remote_filepath = f"../../{path}{filename}"
+
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh.connect(
+        hostname=hostname,
+        port=port,
+        username=username,
+        password=password
+    )
+
+    sftp = ssh.open_sftp()
+
+    try:
+        stat = sftp.stat(remote_filepath)
+        return stat.st_mtime
+    finally:
+        sftp.close()
+        ssh.close()
