@@ -1,6 +1,1 @@
-*.feather
-*.pyc
-db.sqlite3
-riccardotaffoni.pub
-riccardotaffoni
-staticfiles/
+utils/__pycache__/utils.cpython-313.pyc
