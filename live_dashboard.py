@@ -7,6 +7,7 @@ from streamlit_autorefresh import st_autorefresh
 from zoneinfo import ZoneInfo
 
 from utils.utils import read_from_ftp,get_remote_mtime
+
 # --- CONFIGURAZIONE ---
 st.set_page_config(page_title="MTRIAGAS Advanced Analysis", layout="wide")
 FILE_PATH = "opt/veostrading/veostrading_repos/MTRIAGAS/data/"
@@ -138,8 +139,8 @@ else:
     if show_zones:
         regime_colors = {'1_engine': 'rgba(0,176,80,0.1)', '2_engine': 'rgba(255,192,0,0.1)', '3_engine': 'rgba(255,65,54,0.1)'}
         day_limits = {
-            '1_engine': (df_plot['1_engine_min'].min(), df_plot['1_engine_max'].max()),
-            '2_engine': (df_plot['2_engine_min'].min(), df_plot['2_engine_max'].max()),
+            '1_engine': (df_plot['1_engine_min'].max(), df_plot['1_engine_max'].max()),
+            '2_engine': (df_plot['2_engine_min'].max(), df_plot['2_engine_max'].max()),
             '3_engine': (max(df_plot['2_engine_max'].max(), df_plot['3_engine_min'].min()), df_plot['3_engine_max'].max())
         }
         for regime, (low, high) in day_limits.items():
