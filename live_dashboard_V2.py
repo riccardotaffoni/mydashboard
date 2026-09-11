@@ -19,13 +19,87 @@ FILE_PATH = "opt/veostrading/veostrading_repos/MTRIAGAS/data/"
 FILE_NAME = "data_graph.ftr"
 
 
-# ------------------------------------------------------------
-# FINESTRA TEMPORALE DINAMICA
-# ------------------------------------------------------------
-# Numero di quarti d'ora prima/dopo quello corrente da mostrare
+def get_theme(dark_mode):
+    if dark_mode:
+        return {
+            "template": "plotly_dark",
+            "page_bg": "#0f172a",
+            "sidebar_bg": "#111827",
+            "panel_bg": "#1f2937",
+            "text": "#e5e7eb",
+            "muted": "#9ca3af",
+            "grid": "rgba(229, 231, 235, 0.16)",
+            "line": "#e5e7eb",
+            "base_bar": "rgba(148, 163, 184, 0.48)",
+            "positive": "rgba(34, 197, 94, 0.34)",
+            "negative": "rgba(248, 113, 113, 0.36)",
+            "pattern": "#e5e7eb",
+        }
 
-PLOT_BEFORE = 2
-PLOT_AFTER = 12
+    return {
+        "template": "plotly_white",
+        "page_bg": "#ffffff",
+        "sidebar_bg": "#f8fafc",
+        "panel_bg": "#f1f5f9",
+        "text": "#0f172a",
+        "muted": "#64748b",
+        "grid": "rgba(15, 23, 42, 0.14)",
+        "line": "#0f172a",
+        "base_bar": "rgba(100, 116, 139, 0.38)",
+        "positive": "rgba(22, 163, 74, 0.32)",
+        "negative": "rgba(220, 38, 38, 0.30)",
+        "pattern": "#0f172a",
+    }
+
+
+def apply_dashboard_theme(theme):
+    st.markdown(
+        f"""
+        <style>
+            .stApp {{
+                background-color: {theme["page_bg"]};
+                color: {theme["text"]};
+            }}
+            [data-testid="stSidebar"] {{
+                background-color: {theme["sidebar_bg"]};
+            }}
+            [data-testid="stHeader"] {{
+                background-color: {theme["page_bg"]};
+            }}
+            [data-testid="stSidebar"] *,
+            [data-testid="stMarkdownContainer"],
+            [data-testid="stExpander"],
+            h1, h2, h3, h4, h5, h6, p, label {{
+                color: {theme["text"]};
+            }}
+            [data-testid="stButton"] button {{
+                background-color: {theme["panel_bg"]};
+                border: 1px solid {theme["grid"]};
+                color: {theme["text"]};
+            }}
+            [data-testid="stButton"] button p,
+            [data-testid="stButton"] button span {{
+                color: {theme["text"]} !important;
+            }}
+            [data-testid="stButton"] button:hover {{
+                border-color: {theme["muted"]};
+                color: {theme["text"]};
+            }}
+            [data-testid="stCaptionContainer"],
+            .dashboard-muted {{
+                color: {theme["muted"]} !important;
+            }}
+            [data-testid="stExpander"],
+            [data-testid="stDataFrame"] {{
+                background-color: {theme["panel_bg"]};
+            }}
+            hr {{
+                border-color: {theme["grid"]};
+            }}
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 
 # ============================================================
 # AUTO-REFRESH
@@ -48,24 +122,6 @@ last_attempt = now.strftime('%H:%M:%S %d/%m/%Y')
 current_quarter = now.replace(minute=(now.minute // 15) * 15,second=0,microsecond=0)
 
 quarter_number = (current_quarter.hour * 4+ current_quarter.minute // 15+ 1)
-
-# ============================================================
-# FINESTRA TEMPORALE DEL GRAFICO
-# ============================================================
-
-plot_start = current_quarter - timedelta(minutes=15 * PLOT_BEFORE)
-plot_end = current_quarter + timedelta(minutes=15 * (PLOT_AFTER + 1))
-plot_start = plot_start.replace(tzinfo=None)
-plot_end = plot_end.replace(tzinfo=None)
-
-print("----------------------------------------")
-print(f"Current time:      {now}")
-print(f"Current quarter:   QH {quarter_number}")
-print(f"Quarter start:     {current_quarter}")
-print(f"Plot start:        {plot_start}")
-print(f"Plot end:          {plot_end}")
-print("----------------------------------------")
-
 
 # ============================================================
 # CARICAMENTO DATI
@@ -128,6 +184,58 @@ st.sidebar.divider()
 st.sidebar.header("🎨 Opzioni Grafico")
 dark_mode = st.sidebar.toggle("Modalità Scura",value=True)
 show_zones = st.sidebar.checkbox("Mostra Fasce Motore",value=True)
+
+theme = get_theme(dark_mode)
+apply_dashboard_theme(theme)
+
+st.sidebar.divider()
+st.sidebar.header("Finestra Temporale")
+
+max_before = quarter_number - 1
+max_after = 96 - quarter_number
+
+st.session_state.setdefault("plot_before_qh", min(2, max_before))
+st.session_state.setdefault("plot_after_qh", min(12, max_after))
+st.session_state.plot_before_qh = min(st.session_state.plot_before_qh, max_before)
+st.session_state.plot_after_qh = min(st.session_state.plot_after_qh, max_after)
+
+if st.sidebar.button("Mostra tutta la giornata"):
+    st.session_state.plot_before_qh = max_before
+    st.session_state.plot_after_qh = max_after
+
+plot_before = st.sidebar.slider(
+    "Quarter prima",
+    min_value=0,
+    max_value=max_before,
+    key="plot_before_qh",
+    step=1
+)
+
+plot_after = st.sidebar.slider(
+    "Quarter dopo",
+    min_value=0,
+    max_value=max_after,
+    key="plot_after_qh",
+    step=1
+)
+
+# ============================================================
+# FINESTRA TEMPORALE DEL GRAFICO
+# ============================================================
+
+plot_start = current_quarter - timedelta(minutes=15 * plot_before)
+plot_end = current_quarter + timedelta(minutes=15 * (plot_after + 1))
+plot_start = plot_start.replace(tzinfo=None)
+plot_end = plot_end.replace(tzinfo=None)
+now_plot = now.replace(tzinfo=None)
+
+print("----------------------------------------")
+print(f"Current time:      {now}")
+print(f"Current quarter:   QH {quarter_number}")
+print(f"Quarter start:     {current_quarter}")
+print(f"Plot start:        {plot_start}")
+print(f"Plot end:          {plot_end}")
+print("----------------------------------------")
 # ============================================================
 # INFORMAZIONI FINESTRA TEMPORALE
 # ============================================================
@@ -136,7 +244,7 @@ st.sidebar.divider()
 
 st.sidebar.markdown(f"""**Quarto corrente:** QH {quarter_number}
     **Orario:** {current_quarter.strftime('%H:%M')}
-    **Finestra:** -{PLOT_BEFORE} / +{PLOT_AFTER} QH""")
+    **Finestra:** -{plot_before} / +{plot_after} QH""")
 
 # ============================================================
 # FILTRO DATI
@@ -155,8 +263,8 @@ print(df_plot.head())
 # HEADER
 # ============================================================
 
-st.title("🚀 Dashboard MTRIAGAS")
-style = ("font-size: 0.85rem; color: gray;")
+st.title("🚀 Dashboard MTRIAGAS _ V2")
+style = (f"font-size: 0.85rem; color: {theme['muted']};")
 col_t1, col_t2 = st.columns(2)
 
 # ------------------------------------------------------------
@@ -183,7 +291,7 @@ with col_t2:
 # INFORMAZIONI QUARTO CORRENTE
 # ============================================================
 
-st.markdown(f"""<div style="font-size: 0.9rem;color: gray;margin-bottom: 10px;">📍 
+st.markdown(f"""<div style="font-size: 0.9rem;color: {theme['muted']};margin-bottom: 10px;">📍 
                 <b>QH corrente:</b> {quarter_number}&nbsp;&nbsp;|&nbsp;&nbsp;🕒 
                 <b>Ora:</b> {current_quarter.strftime('%H:%M')}&nbsp;&nbsp;|&nbsp;&nbsp;
                 📈 <b>Visualizzazione:</b>{plot_start.strftime('%H:%M')}→ {plot_end.strftime('%H:%M')}</div>""",unsafe_allow_html=True)
@@ -200,7 +308,7 @@ else:
     # TEMPLATE
     # --------------------------------------------------------
 
-    template = ('plotly_dark'if dark_mode else 'plotly_white')
+    template = theme["template"]
 
 
     # --------------------------------------------------------
@@ -222,7 +330,7 @@ else:
             name='Base Power',
 
             marker_color=(
-                'rgba(135, 135, 130, 0.5)'
+                theme["base_bar"]
             ),
 
             hoverinfo='x+y',
@@ -258,10 +366,10 @@ else:
 
             colors = df[column].apply(
                 lambda q:
-                    'rgba(0,128,0,0.3)'
+                    theme["positive"]
                     if q >= 0
                     else
-                    'rgba(255,0,0,0.3)'
+                    theme["negative"]
             ).tolist()
 
 
@@ -298,7 +406,7 @@ else:
                         color=colors,
                         pattern=dict(
                             shape=pattern_shape,
-                            fgcolor='black'
+                            fgcolor=theme["pattern"]
                         )
                     ),
 
@@ -335,7 +443,7 @@ else:
                 y=df_plot[col],
                 mode='lines',
                 name=name,
-                line=dict(color='black',dash='dot',width=2))
+                line=dict(color=theme["line"],dash='dot',width=2))
 
 # ========================================================
     # 4. FASCE MOTORE
@@ -388,7 +496,8 @@ else:
                         showarrow=False,
 
                         font=dict(
-                            size=10
+                            size=10,
+                            color=theme["text"]
                         )
                     )
                 )
@@ -407,8 +516,8 @@ else:
             xref='x',
             yref='paper',
 
-            x0=now,
-            x1=now,
+            x0=now_plot,
+            x1=now_plot,
 
             y0=0,
             y1=1,
@@ -434,6 +543,12 @@ else:
 
         height=700,
 
+        paper_bgcolor=theme["page_bg"],
+
+        plot_bgcolor=theme["page_bg"],
+
+        font=dict(color=theme["text"]),
+
         shapes=shapes,
 
         annotations=annotations,
@@ -455,6 +570,20 @@ else:
             xanchor='left',
             x=1.02
         )
+    )
+
+    fig.update_xaxes(
+        gridcolor=theme["grid"],
+        linecolor=theme["grid"],
+        tickfont=dict(color=theme["text"]),
+        title_font=dict(color=theme["text"])
+    )
+
+    fig.update_yaxes(
+        gridcolor=theme["grid"],
+        linecolor=theme["grid"],
+        tickfont=dict(color=theme["text"]),
+        title_font=dict(color=theme["text"])
     )
 
 
