@@ -85,6 +85,30 @@ def apply_dashboard_theme(theme):
                 border-color: {theme["muted"]};
                 color: {theme["text"]};
             }}
+            [data-testid="stSidebar"] div[role="switch"],
+            [data-testid="stToggle"] div[role="switch"],
+            [data-testid="stCheckbox"] div[role="switch"] {{
+                background-color: {theme["panel_bg"]} !important;
+                border: 2px solid {theme["line"]} !important;
+                box-shadow: 0 0 0 3px {theme["grid"]} !important;
+            }}
+            [data-testid="stSidebar"] div[role="switch"] > div,
+            [data-testid="stToggle"] div[role="switch"] > div,
+            [data-testid="stCheckbox"] div[role="switch"] > div {{
+                background-color: {theme["page_bg"]} !important;
+                border: 2px solid {theme["line"]} !important;
+            }}
+            [data-testid="stSidebar"] div[role="switch"][aria-checked="true"],
+            [data-testid="stToggle"] div[role="switch"][aria-checked="true"],
+            [data-testid="stCheckbox"] div[role="switch"][aria-checked="true"] {{
+                background-color: {theme["line"]} !important;
+                border-color: {theme["line"]} !important;
+            }}
+            [data-testid="stSidebar"] div[role="switch"][aria-checked="true"] > div,
+            [data-testid="stToggle"] div[role="switch"][aria-checked="true"] > div,
+            [data-testid="stCheckbox"] div[role="switch"][aria-checked="true"] > div {{
+                background-color: {theme["page_bg"]} !important;
+            }}
             [data-testid="stCaptionContainer"],
             .dashboard-muted {{
                 color: {theme["muted"]} !important;
