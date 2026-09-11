@@ -1,12 +1,13 @@
-import streamlit as st
-import pandas as pd
-import plotly.graph_objects as go
 import time
 from datetime import datetime, timedelta
-from streamlit_autorefresh import st_autorefresh
 from zoneinfo import ZoneInfo
 
-from utils.utils import read_from_ftp,get_remote_mtime
+import pandas as pd
+import plotly.graph_objects as go
+import streamlit as st
+from streamlit_autorefresh import st_autorefresh
+
+from utils.utils import get_remote_mtime, read_from_ftp
 
 # --- CONFIGURAZIONE ---
 st.set_page_config(page_title="MTRIAGAS Advanced Analysis", layout="wide")
@@ -32,6 +33,7 @@ def load_data(mtime):
 
 mtime = get_remote_mtime(filename=FILE_NAME, path=FILE_PATH)
 df, current_mtime = load_data(mtime)
+
 # --- SIDEBAR: CONTROLLI ANALISTA ---
 print(df.head())
 st.sidebar.header("📊 Componenti Potenza")
