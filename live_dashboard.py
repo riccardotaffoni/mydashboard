@@ -20,7 +20,7 @@ st.set_page_config(page_title="MTRIAGAS ANALISI AVANZATA",layout="wide")
 FILE_PATH = "opt/veostrading/veostrading_repos/MTRIAGAS/data/"
 FILE_NAME = "data_graph.ftr"
 
-TEST = True
+TEST = False
 
 if TEST:
     FILE_PATH = r"C:\\Users\\Maciej Sakwa\\OneDrive - Veos\\Desktop\\repos_cloud\\MTRIAGAS\\data"
