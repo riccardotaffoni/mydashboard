@@ -1,7 +1,9 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 import time
+import os
 from datetime import datetime, timedelta
 from streamlit_autorefresh import st_autorefresh
 from zoneinfo import ZoneInfo
@@ -13,11 +15,15 @@ from utils.utils import read_from_ftp, get_remote_mtime
 # CONFIGURAZIONE
 # ============================================================
 
-st.set_page_config(page_title="MTRIAGAS Advanced Analysis",layout="wide")
+st.set_page_config(page_title="MTRIAGAS ANALISI AVANZATA",layout="wide")
 
 FILE_PATH = "opt/veostrading/veostrading_repos/MTRIAGAS/data/"
 FILE_NAME = "data_graph.ftr"
 
+TEST = True
+
+if TEST:
+    FILE_PATH = r"C:\\Users\\Maciej Sakwa\\OneDrive - Veos\\Desktop\\repos_cloud\\MTRIAGAS\\data"
 
 def get_theme(dark_mode):
     if dark_mode:
@@ -152,7 +158,7 @@ quarter_number = (current_quarter.hour * 4+ current_quarter.minute // 15+ 1)
 # ============================================================
 
 @st.cache_data(show_spinner=False)
-def load_data(mtime):
+def load_data():
 
     try:
 
@@ -177,43 +183,66 @@ def load_data(mtime):
     except Exception as e:
 
         st.error(
-            f"Errore: {e}"
+            f"ERRORE: {e}"
         )
 
         return pd.DataFrame(), None
 
-# Timestamp remoto del file
-mtime = get_remote_mtime(filename=FILE_NAME,path=FILE_PATH)
+@st.cache_data(show_spinner=False)
+def load_data_test():
+
+    try:
+
+        time.sleep(0.1)
+
+        df, current_mtime = pd.read_feather(os.path.join(FILE_PATH, FILE_NAME)), os.path.getmtime(os.path.join(FILE_PATH, FILE_NAME))
+
+        df['delivery_start'] = pd.to_datetime(
+            df['delivery_start']
+        )
+        
+        df = df.sort_values(
+            'delivery_start'
+        )
+
+        return df, current_mtime
+
+    except Exception as e:
+
+        st.error(
+            f"ERRORE: {e}"
+        )
+
+        return pd.DataFrame(), None
 
 # Caricamento dati
-df, current_mtime = load_data(mtime)
+if TEST:
+    df, current_mtime = load_data_test()
+else:
+    df, current_mtime = load_data()
 
 # ============================================================
 # SIDEBAR — CONTROLLI ANALISTA
 # ============================================================
 
-st.sidebar.header("📊 Componenti Potenza")
+st.sidebar.header("📊 COMPONENTI POTENZA")
 
-sw_sbil = st.sidebar.checkbox("Mostra QTY SBIL",value=True)
+sw_vol = st.sidebar.checkbox("MOSTRA QUANTITA VOLONTARI",value=True)
 
-sw_levl = st.sidebar.checkbox("Mostra QTY LEVL",value=True)
-
-sw_must = st.sidebar.checkbox("Mostra QTY MUST",value=True)
-
-sw_flex = st.sidebar.checkbox("Mostra QTY FLEX",value=True)
+sw_must = st.sidebar.checkbox("MOSTRA QUANTITA OBBLIGATORI",value=True)
 
 st.sidebar.divider()
 
 
-st.sidebar.header("🎨 Opzioni Grafico")
-dark_mode = st.sidebar.toggle("Modalità Scura",value=True)
-show_zones = st.sidebar.checkbox("Mostra Fasce Motore",value=True)
+st.sidebar.header("🎨 OPZIONI GRAFICO")
+dark_mode = st.sidebar.toggle("MODALITA SCURA",value=True)
+show_zones = st.sidebar.checkbox("MOSTRA FASCE MOTORE",value=True)
 
 theme = get_theme(dark_mode)
 apply_dashboard_theme(theme)
 
 st.sidebar.divider()
-st.sidebar.header("Finestra Temporale")
+st.sidebar.header("FINESTRA TEMPORALE")
 
 max_before = quarter_number - 1
 max_after = 96 - quarter_number
@@ -223,12 +252,12 @@ st.session_state.setdefault("plot_after_qh", min(12, max_after))
 st.session_state.plot_before_qh = min(st.session_state.plot_before_qh, max_before)
 st.session_state.plot_after_qh = min(st.session_state.plot_after_qh, max_after)
 
-if st.sidebar.button("Mostra tutta la giornata"):
+if st.sidebar.button("MOSTRA TUTTA LA GIORNATA"):
     st.session_state.plot_before_qh = max_before
     st.session_state.plot_after_qh = max_after
 
 plot_before = st.sidebar.slider(
-    "Quarter prima",
+    "QUARTI PRIMA",
     min_value=0,
     max_value=max_before,
     key="plot_before_qh",
@@ -236,7 +265,7 @@ plot_before = st.sidebar.slider(
 )
 
 plot_after = st.sidebar.slider(
-    "Quarter dopo",
+    "QUARTI DOPO",
     min_value=0,
     max_value=max_after,
     key="plot_after_qh",
@@ -266,9 +295,9 @@ print("----------------------------------------")
 
 st.sidebar.divider()
 
-st.sidebar.markdown(f"""**Quarto corrente:** QH {quarter_number}
-    **Orario:** {current_quarter.strftime('%H:%M')}
-    **Finestra:** -{plot_before} / +{plot_after} QH""")
+st.sidebar.markdown(f"""**QUARTO CORRENTE:** QH {quarter_number}
+    **ORARIO:** {current_quarter.strftime('%H:%M')}
+    **FINESTRA:** -{plot_before} / +{plot_after} QH""")
 
 # ============================================================
 # FILTRO DATI
@@ -279,6 +308,36 @@ if not df.empty:
 else:
     df_plot = pd.DataFrame()
 
+if not df_plot.empty:
+    if 'QTY_VOLONTARI' in df_plot.columns:
+        df_plot['QTY_VOLONTARI_DASH'] = df_plot['QTY_VOLONTARI']
+    else:
+        vol_qty_cols = [
+            c for c in ['QTY_SBIL', 'QTY_LEVL', 'QTY_FLEX']
+            if c in df_plot.columns
+        ]
+        if vol_qty_cols:
+            df_plot['QTY_VOLONTARI_DASH'] = df_plot[vol_qty_cols].sum(axis=1)
+        else:
+            df_plot['QTY_VOLONTARI_DASH'] = 0.0
+
+    if 'PNL_VOLONTARI_expected' in df_plot.columns:
+        df_plot['PNL_VOLONTARI_expected_DASH'] = df_plot['PNL_VOLONTARI_expected']
+    else:
+        vol_pnl_cols = [
+            c for c in ['PNL_SBIL_expected', 'PNL_LEVL_expected', 'PNL_FLEX_expected']
+            if c in df_plot.columns
+        ]
+        if vol_pnl_cols:
+            df_plot['PNL_VOLONTARI_expected_DASH'] = df_plot[vol_pnl_cols].sum(axis=1)
+        else:
+            df_plot['PNL_VOLONTARI_expected_DASH'] = 0.0
+
+    if 'QTY_MUST' not in df_plot.columns:
+        df_plot['QTY_MUST'] = 0.0
+    if 'PNL_MUST_expected' not in df_plot.columns:
+        df_plot['PNL_MUST_expected'] = 0.0
+
 print("DATAFRAME PLOT:")
 print(df_plot.head())
 
@@ -287,7 +346,7 @@ print(df_plot.head())
 # HEADER
 # ============================================================
 
-st.title("🚀 Dashboard MTRIAGAS _ V2")
+st.title("🚀 CRUSCOTTO MTRIAGAS _ V3")
 style = (f"font-size: 0.85rem; color: {theme['muted']};")
 col_t1, col_t2 = st.columns(2)
 
@@ -300,7 +359,7 @@ with col_t1:
     if current_mtime is not None:
 
         mtime_dt = datetime.fromtimestamp(current_mtime,ZoneInfo("Europe/Rome")).strftime('%H:%M:%S %d/%m')
-        st.markdown(f"""<p style='{style}'>📂 <b>Ultima modifica dati:</b> {mtime_dt}</p>""",unsafe_allow_html=True)
+        st.markdown(f"""<p style='{style}'>📂 <b>ULTIMA MODIFICA DATI:</b> {mtime_dt}</p>""",unsafe_allow_html=True)
 
 # ------------------------------------------------------------
 # Ultimo controllo
@@ -308,7 +367,7 @@ with col_t1:
 
 with col_t2:
 
-    st.markdown(f"""<p style='{style} text-align: right;'>🔄 <b>Ultimo controllo:</b> {last_attempt}</p>""",unsafe_allow_html=True)
+    st.markdown(f"""<p style='{style} text-align: right;'>🔄 <b>ULTIMO CONTROLLO:</b> {last_attempt}</p>""",unsafe_allow_html=True)
 
 
 # ============================================================
@@ -316,9 +375,9 @@ with col_t2:
 # ============================================================
 
 st.markdown(f"""<div style="font-size: 0.9rem;color: {theme['muted']};margin-bottom: 10px;">📍 
-                <b>QH corrente:</b> {quarter_number}&nbsp;&nbsp;|&nbsp;&nbsp;🕒 
-                <b>Ora:</b> {current_quarter.strftime('%H:%M')}&nbsp;&nbsp;|&nbsp;&nbsp;
-                📈 <b>Visualizzazione:</b>{plot_start.strftime('%H:%M')}→ {plot_end.strftime('%H:%M')}</div>""",unsafe_allow_html=True)
+                <b>QH CORRENTE:</b> {quarter_number}&nbsp;&nbsp;|&nbsp;&nbsp;🕒 
+                <b>ORA:</b> {current_quarter.strftime('%H:%M')}&nbsp;&nbsp;|&nbsp;&nbsp;
+                📈 <b>VISUALIZZAZIONE:</b>{plot_start.strftime('%H:%M')}→ {plot_end.strftime('%H:%M')}</div>""",unsafe_allow_html=True)
 
 
 # ============================================================
@@ -326,7 +385,7 @@ st.markdown(f"""<div style="font-size: 0.9rem;color: {theme['muted']};margin-bot
 # ============================================================
 
 if df_plot.empty:
-    st.warning("Nessun dato trovato nella finestra temporale corrente.")
+    st.warning("NESSUN DATO TROVATO NELLA FINESTRA TEMPORALE CORRENTE.")
 else:
     # --------------------------------------------------------
     # TEMPLATE
@@ -339,7 +398,14 @@ else:
     # FIGURA
     # --------------------------------------------------------
 
-    fig = go.Figure()
+    fig = make_subplots(
+        rows=2,
+        cols=1,
+        shared_xaxes=True,
+        vertical_spacing=0.06,
+        row_heights=[0.72, 0.28],
+        subplot_titles=("POTENZA E QUANTITA", "PNL")
+    )
 
 
     # ========================================================
@@ -351,7 +417,7 @@ else:
             x=df_plot['delivery_start'],
             y=df_plot['power'],
 
-            name='Base Power',
+            name='PROGRAMMA VINCOLANTE',
 
             marker_color=(
                 theme["base_bar"]
@@ -360,16 +426,18 @@ else:
             hoverinfo='x+y',
 
             customdata=df_plot[
-                ['cost', 'price_imb']
+                ['price_imb']
             ].values,
 
             hovertemplate=(
-                "Ora: %{x}<br>"
-                "Power: %{y} MW<br>"
-                "Cost: %{customdata[0]}"
+                "ORA: %{x}<br>"
+                "POTENZA: %{y} MW<br>"
+                "PREZZO SBILANCIAMENTO: %{customdata[0]}"
                 "<extra></extra>"
             )
-        )
+        ),
+        row=1,
+        col=1
     )
 
 
@@ -381,6 +449,7 @@ else:
         fig,
         df,
         column,
+        pnl_column,
         name,
         pattern_shape,
         switch
@@ -388,77 +457,94 @@ else:
 
         if switch and column in df.columns:
 
-            colors = df[column].apply(
-                lambda q:
-                    theme["positive"]
-                    if q >= 0
-                    else
-                    theme["negative"]
-            ).tolist()
-
-
-            pnl_col = (
-                f'PNL_{column.split("_")[1]}_expected'
-            )
-
+            pnl_col = pnl_column
 
             if pnl_col in df.columns:
-
-                customdata = df[
-                    [pnl_col, 'power']
-                ].values
-
+                customdata = df[[pnl_col, 'power']].values
             else:
+                customdata = df[['power']].values
 
-                customdata = df[
-                    ['power']
-                ].values
-
+            up_y = df[column].where(df[column] >= 0, other=None)
+            down_y = df[column].where(df[column] < 0, other=None)
 
             fig.add_trace(
                 go.Bar(
-
                     x=df['delivery_start'],
-
-                    y=df[column],
-
+                    y=up_y,
                     base=df['power'],
-
-                    name=name,
-
+                    name=f"{name} A SALIRE",
                     marker=dict(
-                        color=colors,
+                        color=theme["positive"],
                         pattern=dict(
                             shape=pattern_shape,
                             fgcolor=theme["pattern"]
                         )
                     ),
-
                     customdata=customdata,
-
+                    legendgroup=name,
                     hovertemplate=(
-                        "QTY: %{y}<br>"
-                        "Expected PNL: "
+                        "QUANTITA: %{y}<br>"
+                        "PNL PREVISTO: "
                         "%{customdata[0]:.3f}"
                         "<extra></extra>"
                     )
-                )
+                ),
+                row=1,
+                col=1
+            )
+
+            fig.add_trace(
+                go.Bar(
+                    x=df['delivery_start'],
+                    y=down_y,
+                    base=df['power'],
+                    name=f"{name} A SCENDERE",
+                    marker=dict(
+                        color=theme["negative"],
+                        pattern=dict(
+                            shape=pattern_shape,
+                            fgcolor=theme["pattern"]
+                        )
+                    ),
+                    customdata=customdata,
+                    legendgroup=name,
+                    hovertemplate=(
+                        "QUANTITÀ: %{y}<br>"
+                        "PNL PREVISTO: "
+                        "%{customdata[0]:.3f}"
+                        "<extra></extra>"
+                    )
+                ),
+                row=1,
+                col=1
             )
 
 
-    add_component(fig,df_plot,'QTY_SBIL','SBIL','/',sw_sbil)
+    add_component(
+        fig,
+        df_plot,
+        'QTY_VOLONTARI_DASH',
+        'PNL_VOLONTARI_expected_DASH',
+        'VOLONTARI',
+        '',
+        sw_vol
+    )
 
-    add_component(fig,df_plot,'QTY_LEVL','LEVL','+',sw_levl)
-
-    add_component(fig,df_plot,'QTY_MUST','MUST','x',sw_must)
-
-    add_component(fig,df_plot,'QTY_FLEX','FLEX','.',sw_flex)
+    add_component(
+        fig,
+        df_plot,
+        'QTY_MUST',
+        'PNL_MUST_expected',
+        'OBBLIGATORI',
+        '/',
+        sw_must
+    )
 
     # ========================================================
     # 3. LINEE FI
     # ========================================================
 
-    for col, name in [('fi_up', 'FI UP'),('fi_down', 'FI DOWN')]:
+    for col, name in [('fi_up', 'INTERVALLO DI FATTIBILITA SUPERIORE'),('fi_down', 'INTERVALLO DI FATTIBILITA INFERIORE')]:
 
         if col in df_plot.columns:
 
@@ -467,10 +553,37 @@ else:
                 y=df_plot[col],
                 mode='lines',
                 name=name,
-                line=dict(color=theme["line"],dash='dot',width=2))
+                line=dict(color=theme["line"],dash='dot',width=2),
+                row=1,
+                col=1
+            )
 
 # ========================================================
-    # 4. FASCE MOTORE
+    # 4. PNL SECONDARIO
+    # ========================================================
+
+    fig.add_scatter(
+        x=df_plot['delivery_start'],
+        y=df_plot['PNL_expected'],
+        mode='lines+markers',
+        name='PNL PREVISTO',
+        line=dict(color='#2563eb', width=2),
+        row=2,
+        col=1
+    )
+
+    fig.add_scatter(
+        x=df_plot['delivery_start'],
+        y=df_plot['PNL_realized'],
+        mode='lines+markers',
+        name='PNL REALIZZATO',
+        line=dict(color='#dc2626', width=2),
+        row=2,
+        col=1
+    )
+
+# ========================================================
+    # 5. FASCE MOTORE
     # ========================================================
 
     shapes = []
@@ -480,9 +593,9 @@ else:
     if show_zones:
         regime_colors = {
             '1_engine':'rgba(0,176,80,0.25)',
-
             '2_engine':'rgba(255,192,0,0.25)',
-            '3_engine':'rgba(255,65,54,0.25)'}
+            '3_engine':'rgba(255,65,54,0.25)'
+        }
 
 
         day_limits = {
@@ -508,17 +621,11 @@ else:
 
                 annotations.append(
                     dict(
-
                         xref='paper',
-
                         x=0.01,
-
                         y=(low + high) / 2,
-
                         text=regime.upper(),
-
                         showarrow=False,
-
                         font=dict(
                             size=10,
                             color=theme["text"]
@@ -528,7 +635,7 @@ else:
 
 
     # ========================================================
-    # 5. LINEA ORA CORRENTE
+    # 6. LINEA ORA CORRENTE
     # ========================================================
 
     shapes.append(
@@ -556,27 +663,19 @@ else:
 
 
     # ========================================================
-    # 6. LAYOUT
+    # 7. LAYOUT
     # ========================================================
 
     fig.update_layout(
 
         template=template,
-
         barmode='overlay',
-
-        height=700,
-
+        height=840,
         paper_bgcolor=theme["page_bg"],
-
         plot_bgcolor=theme["page_bg"],
-
         font=dict(color=theme["text"]),
-
         shapes=shapes,
-
         annotations=annotations,
-
         margin=dict(
             l=10,
             r=10,
@@ -585,12 +684,9 @@ else:
         ),
 
         legend=dict(
-
             orientation='v',
-
             yanchor='top',
             y=1,
-
             xanchor='left',
             x=1.02
         )
@@ -607,12 +703,22 @@ else:
         gridcolor=theme["grid"],
         linecolor=theme["grid"],
         tickfont=dict(color=theme["text"]),
-        title_font=dict(color=theme["text"])
+        title_font=dict(color=theme["text"]),
+        row=1,
+        col=1
     )
 
+    fig.update_yaxes(
+        gridcolor=theme["grid"],
+        linecolor=theme["grid"],
+        tickfont=dict(color=theme["text"]),
+        title_font=dict(color=theme["text"]),
+        row=2,
+        col=1
+    )
 
     # ========================================================
-    # 7. PLOT
+    # 8. PLOT
     # ========================================================
 
     st.plotly_chart(
@@ -620,13 +726,12 @@ else:
         width='stretch'
     )
 
-
     # ========================================================
-    # 8. TABELLA
+    # 9. TABELLA
     # ========================================================
 
     with st.expander(
-        "🔍 Tabella Dati"
+        "🔍 TABELLA DATI"
     ):
 
         st.dataframe(

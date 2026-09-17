@@ -1,3 +1,7 @@
-utils/__pycache__/utils.cpython-313.pyc
+utils/__pycache__/
+*.pyc
 .streamlit/secrets.toml
 .vscode/
+.venv/
+.env
+utils/__pycache__/utils.cpython-312.pyc
