@@ -2,6 +2,7 @@ from io import BytesIO
 import paramiko
 import pandas as pd
 import streamlit as st
+
 def read_from_ftp(
     filename,
     path="opt/veostrading/veos_ita_automation/",
