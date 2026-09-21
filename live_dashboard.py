@@ -310,35 +310,35 @@ if not df.empty:
 else:
     df_plot = pd.DataFrame()
 
-if not df_plot.empty:
-    if 'QTY_VOLONTARI' in df_plot.columns:
-        df_plot['QTY_VOLONTARI_DASH'] = df_plot['QTY_VOLONTARI']
-    else:
-        vol_qty_cols = [
-            c for c in ['QTY_SBIL', 'QTY_LEVL', 'QTY_FLEX']
-            if c in df_plot.columns
-        ]
-        if vol_qty_cols:
-            df_plot['QTY_VOLONTARI_DASH'] = df_plot[vol_qty_cols].sum(axis=1)
-        else:
-            df_plot['QTY_VOLONTARI_DASH'] = 0.0
+# if not df_plot.empty:
+#     if 'QTY_VOLONTARI' in df_plot.columns:
+#         df_plot['QTY_VOLONTARI_DASH'] = df_plot['QTY_VOLONTARI']
+#     else:
+#         vol_qty_cols = [
+#             c for c in ['QTY_SBIL', 'QTY_LEVL', 'QTY_FLEX']
+#             if c in df_plot.columns
+#         ]
+#         if vol_qty_cols:
+#             df_plot['QTY_VOLONTARI_DASH'] = df_plot[vol_qty_cols].sum(axis=1)
+#         else:
+#             df_plot['QTY_VOLONTARI_DASH'] = 0.0
 
-    if 'PNL_VOLONTARI_expected' in df_plot.columns:
-        df_plot['PNL_VOLONTARI_expected_DASH'] = df_plot['PNL_VOLONTARI_expected']
-    else:
-        vol_pnl_cols = [
-            c for c in ['PNL_SBIL_expected', 'PNL_LEVL_expected', 'PNL_FLEX_expected']
-            if c in df_plot.columns
-        ]
-        if vol_pnl_cols:
-            df_plot['PNL_VOLONTARI_expected_DASH'] = df_plot[vol_pnl_cols].sum(axis=1)
-        else:
-            df_plot['PNL_VOLONTARI_expected_DASH'] = 0.0
+#     if 'PNL_VOLONTARI_expected' in df_plot.columns:
+#         df_plot['PNL_VOLONTARI_expected_DASH'] = df_plot['PNL_VOLONTARI_expected']
+#     else:
+#         vol_pnl_cols = [
+#             c for c in ['PNL_SBIL_expected', 'PNL_LEVL_expected', 'PNL_FLEX_expected']
+#             if c in df_plot.columns
+#         ]
+#         if vol_pnl_cols:
+#             df_plot['PNL_VOLONTARI_expected_DASH'] = df_plot[vol_pnl_cols].sum(axis=1)
+#         else:
+#             df_plot['PNL_VOLONTARI_expected_DASH'] = 0.0
 
-    if 'QTY_MUST' not in df_plot.columns:
-        df_plot['QTY_MUST'] = 0.0
-    if 'PNL_MUST_expected' not in df_plot.columns:
-        df_plot['PNL_MUST_expected'] = 0.0
+#     if 'QTY_MUST' not in df_plot.columns:
+#         df_plot['QTY_MUST'] = 0.0
+#     if 'PNL_MUST_expected' not in df_plot.columns:
+#         df_plot['PNL_MUST_expected'] = 0.0
 
 print("DATAFRAME PLOT:")
 print(df_plot.head())
@@ -525,8 +525,8 @@ else:
     add_component(
         fig,
         df_plot,
-        'QTY_VOLONTARI_DASH',
-        'PNL_VOLONTARI_expected_DASH',
+        'QTY_VOLONTARI',
+        'PNL_VOLONTARI_expected',
         'VOLONTARI',
         '',
         sw_vol
