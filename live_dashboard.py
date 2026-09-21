@@ -23,7 +23,7 @@ FILE_NAME = "data_graph.ftr"
 TEST = False
 
 if TEST:
-    FILE_PATH = r"C:\\Users\\Maciej Sakwa\\OneDrive - Veos\\Desktop\\repos_cloud\\MTRIAGAS\\data"
+    FILE_PATH = r"C:\Users\Maciej Sakwa\OneDrive - Veos\Desktop\random_checks"
 
 def get_theme(dark_mode):
     if dark_mode:
@@ -158,7 +158,7 @@ quarter_number = (current_quarter.hour * 4+ current_quarter.minute // 15+ 1)
 # ============================================================
 
 @st.cache_data(show_spinner=False)
-def load_data():
+def load_data(mtime):
 
     try:
 
@@ -216,10 +216,12 @@ def load_data_test():
         return pd.DataFrame(), None
 
 # Caricamento dati
+
 if TEST:
     df, current_mtime = load_data_test()
 else:
-    df, current_mtime = load_data()
+    mtime = get_remote_mtime(filename=FILE_NAME,path=FILE_PATH)
+    df, current_mtime = load_data(mtime)
 
 # ============================================================
 # SIDEBAR — CONTROLLI ANALISTA
