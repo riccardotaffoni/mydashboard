@@ -229,9 +229,9 @@ else:
 
 st.sidebar.header("📊 COMPONENTI POTENZA")
 
-sw_vol = st.sidebar.checkbox("MOSTRA QUANTITA VOLONTARI",value=True)
+sw_vol = st.sidebar.checkbox("MOSTRA QUANTITA OTTIMIZZAZIONE",value=True)
 
-sw_must = st.sidebar.checkbox("MOSTRA QUANTITA OBBLIGATORI",value=True)
+sw_must = st.sidebar.checkbox("MOSTRA QUANTITA VINCOLI TECNICI",value=True)
 
 st.sidebar.divider()
 
