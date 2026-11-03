@@ -250,7 +250,7 @@ max_before = quarter_number - 1
 max_after = 96 - quarter_number
 
 st.session_state.setdefault("plot_before_qh", min(2, max_before))
-st.session_state.setdefault("plot_after_qh", min(12, max_after))
+st.session_state.setdefault("plot_after_qh", max_after)
 st.session_state.plot_before_qh = min(st.session_state.plot_before_qh, max_before)
 st.session_state.plot_after_qh = min(st.session_state.plot_after_qh, max_after)
 
