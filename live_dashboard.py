@@ -1,15 +1,15 @@
-import streamlit as st
-import pandas as pd
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-import time
 import os
+import time
 from datetime import datetime, timedelta
-from streamlit_autorefresh import st_autorefresh
 from zoneinfo import ZoneInfo
 
-from utils.utils import read_from_ftp, get_remote_mtime
+import pandas as pd
+import plotly.graph_objects as go
+import streamlit as st
+from plotly.subplots import make_subplots
+from streamlit_autorefresh import st_autorefresh
 
+from utils.utils import get_remote_mtime, read_from_ftp
 
 # ============================================================
 # CONFIGURAZIONE
@@ -527,7 +527,7 @@ else:
         df_plot,
         'QTY_VOLONTARI',
         'PNL_VOLONTARI_expected',
-        'VOLONTARI',
+        'OTTIMIZZAZIONE',
         '',
         sw_vol
     )
@@ -537,7 +537,7 @@ else:
         df_plot,
         'QTY_MUST',
         'PNL_MUST_expected',
-        'OBBLIGATORI',
+        'VINCOLO TECNICO',
         '/',
         sw_must
     )
@@ -690,7 +690,8 @@ else:
             yanchor='top',
             y=1,
             xanchor='left',
-            x=1.02
+            x=1.02,
+            font=dict(color=theme["text"])
         )
     )
 
@@ -725,7 +726,8 @@ else:
 
     st.plotly_chart(
         fig,
-        width='stretch'
+        width='stretch',
+        theme=None
     )
 
     # ========================================================
