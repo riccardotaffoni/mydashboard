@@ -246,17 +246,24 @@ apply_dashboard_theme(theme)
 st.sidebar.divider()
 st.sidebar.header("FINESTRA TEMPORALE")
 
-max_before = quarter_number - 1
-max_after = 96 - quarter_number
+# Finestra mobile di 24h: gli slider non sono più limitati alla giornata corrente,
+# così il profilo resta continuo anche a cavallo della mezzanotte
+WINDOW_QH = 96
+
+max_before = WINDOW_QH
+max_after = WINDOW_QH
+
+today_before = quarter_number - 1
+today_after = 96 - quarter_number
 
 st.session_state.setdefault("plot_before_qh", min(2, max_before))
-st.session_state.setdefault("plot_after_qh", max_after)
+st.session_state.setdefault("plot_after_qh", max(today_after, 8))
 st.session_state.plot_before_qh = min(st.session_state.plot_before_qh, max_before)
 st.session_state.plot_after_qh = min(st.session_state.plot_after_qh, max_after)
 
 if st.sidebar.button("MOSTRA TUTTA LA GIORNATA"):
-    st.session_state.plot_before_qh = max_before
-    st.session_state.plot_after_qh = max_after
+    st.session_state.plot_before_qh = today_before
+    st.session_state.plot_after_qh = today_after
 
 plot_before = st.sidebar.slider(
     "QUARTI PRIMA",
@@ -284,6 +291,16 @@ plot_start = plot_start.replace(tzinfo=None)
 plot_end = plot_end.replace(tzinfo=None)
 now_plot = now.replace(tzinfo=None)
 
+# Se la finestra attraversa la mezzanotte le etichette mostrano anche la data
+cross_day = plot_start.date() != (plot_end - timedelta(minutes=15)).date()
+window_fmt = '%d/%m %H:%M' if cross_day else '%H:%M'
+
+midnights = []
+midnight = datetime.combine(plot_start.date() + timedelta(days=1), datetime.min.time())
+while midnight < plot_end:
+    midnights.append(midnight)
+    midnight += timedelta(days=1)
+
 print("----------------------------------------")
 print(f"Current time:      {now}")
 print(f"Current quarter:   QH {quarter_number}")
@@ -299,7 +316,8 @@ st.sidebar.divider()
 
 st.sidebar.markdown(f"""**QUARTO CORRENTE:** QH {quarter_number}
     **ORARIO:** {current_quarter.strftime('%H:%M')}
-    **FINESTRA:** -{plot_before} / +{plot_after} QH""")
+    **FINESTRA:** -{plot_before} / +{plot_after} QH
+    **DA:** {plot_start.strftime(window_fmt)} **A:** {plot_end.strftime(window_fmt)}""")
 
 # ============================================================
 # FILTRO DATI
@@ -307,8 +325,11 @@ st.sidebar.markdown(f"""**QUARTO CORRENTE:** QH {quarter_number}
 
 if not df.empty:
     df_plot = df[(df['delivery_start'] >= plot_start) &(df['delivery_start'] < plot_end)].copy()
+    data_first = df['delivery_start'].min()
+    data_last = df['delivery_start'].max()
 else:
     df_plot = pd.DataFrame()
+    data_first = data_last = None
 
 # if not df_plot.empty:
 #     if 'QTY_VOLONTARI' in df_plot.columns:
@@ -348,7 +369,7 @@ print(df_plot.head())
 # HEADER
 # ============================================================
 
-st.title("🚀 CRUSCOTTO MTRIAGAS _ V3")
+st.title("🚀 CRUSCOTTO MTRIAGAS _ V4")
 style = (f"font-size: 0.85rem; color: {theme['muted']};")
 col_t1, col_t2 = st.columns(2)
 
@@ -379,7 +400,19 @@ with col_t2:
 st.markdown(f"""<div style="font-size: 0.9rem;color: {theme['muted']};margin-bottom: 10px;">📍 
                 <b>QH CORRENTE:</b> {quarter_number}&nbsp;&nbsp;|&nbsp;&nbsp;🕒 
                 <b>ORA:</b> {current_quarter.strftime('%H:%M')}&nbsp;&nbsp;|&nbsp;&nbsp;
-                📈 <b>VISUALIZZAZIONE:</b>{plot_start.strftime('%H:%M')}→ {plot_end.strftime('%H:%M')}</div>""",unsafe_allow_html=True)
+                📈 <b>VISUALIZZAZIONE:</b>{plot_start.strftime(window_fmt)}→ {plot_end.strftime(window_fmt)}</div>""",unsafe_allow_html=True)
+
+# ------------------------------------------------------------
+# Avviso quarti fuori dai dati disponibili
+# ------------------------------------------------------------
+
+if data_last is not None:
+
+    if plot_end > data_last + timedelta(minutes=15):
+        st.info(f"DATI DISPONIBILI FINO A {(data_last + timedelta(minutes=15)).strftime('%d/%m %H:%M')} — I QUARTI SUCCESSIVI NON SONO ANCORA NEL FILE")
+
+    if plot_start < data_first:
+        st.info(f"DATI DISPONIBILI DA {data_first.strftime('%d/%m %H:%M')} — I QUARTI PRECEDENTI NON SONO NEL FILE")
 
 
 # ============================================================
@@ -662,6 +695,46 @@ else:
             )
         )
     )
+
+    # ========================================================
+    # 6b. SEPARATORE MEZZANOTTE
+    # ========================================================
+
+    for midnight in midnights:
+
+        shapes.append(
+            dict(
+                type='line',
+                xref='x',
+                yref='paper',
+                x0=midnight,
+                x1=midnight,
+                y0=0,
+                y1=1,
+                line=dict(
+                    color=theme["muted"],
+                    width=2,
+                    dash='dot'
+                )
+            )
+        )
+
+        annotations.append(
+            dict(
+                xref='x',
+                yref='paper',
+                x=midnight,
+                y=1.0,
+                xanchor='left',
+                yanchor='bottom',
+                text=f"▶ {midnight.strftime('%d/%m')}",
+                showarrow=False,
+                font=dict(
+                    size=11,
+                    color=theme["muted"]
+                )
+            )
+        )
 
 
     # ========================================================
